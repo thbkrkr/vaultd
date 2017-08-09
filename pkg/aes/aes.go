@@ -3,65 +3,47 @@ package aes
 import (
 	"crypto/aes"
 	"crypto/cipher"
-	"crypto/rand"
 	"encoding/hex"
-	"errors"
 	"fmt"
-	"io"
-	"time"
-
-	"github.com/Sirupsen/logrus"
 )
 
-// TODO: to rework
-
 type AESCrypter struct {
-	CipherKey []byte
-	Nonce     string
-	//Sault      string
+	cipherKey []byte
+	nonce     []byte
 }
 
-func (c *AESCrypter) AESDecrypt(text string) (string, error) {
-	block, err := aes.NewCipher(c.CipherKey)
+func NewAESCrypter(key string, nonce string) AESCrypter {
+	bnonce := hex.EncodeToString([]byte(nonce))
+	snonce, _ := hex.DecodeString(bnonce)
+	return AESCrypter{
+		cipherKey: []byte(key),
+		nonce:     snonce,
+	}
+}
+
+func (c *AESCrypter) Encrypt(plaintext string) (decodedmess string, err error) {
+	block, err := aes.NewCipher(c.cipherKey)
 	if err != nil {
-		logrus.Error("Error initializing cypher")
 		return "", err
 	}
 
-	cipherText, err := hex.DecodeString(text)
+	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
+		fmt.Println(err)
 		return "", err
 	}
 
-	/*
-		cipherText, err := base64.StdEncoding.DecodeString(text)
-		if err != nil {
-			logrus.Error("Error decoding base64 encrypted data")
-			return "", err
-		}
-	*/
-
-	if len(cipherText) < aes.BlockSize {
-		logrus.Errorf("ciphertext too short: %d", len(cipherText))
-		return "", errors.New(fmt.Sprint())
-	}
-	unb64ed := []byte(cipherText)
-	iv := unb64ed[:aes.BlockSize]
-	unb64ed = unb64ed[aes.BlockSize:]
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(unb64ed, unb64ed)
-	return string(unb64ed), nil
+	cipherText := aesgcm.Seal(nil, c.nonce, []byte(plaintext), nil)
+	return fmt.Sprintf("%x", cipherText), nil
 }
 
-func (c *AESCrypter) AESdecrypt2(message string) (string, error) {
+func (c *AESCrypter) Decrypt(message string) (string, error) {
 	cipherText, err := hex.DecodeString(message)
 	if err != nil {
 		return "", err
 	}
 
-	nonce, _ := hex.DecodeString(c.Nonce)
-
-	block, err := aes.NewCipher(c.CipherKey)
+	block, err := aes.NewCipher(c.cipherKey)
 	if err != nil {
 		return "", err
 	}
@@ -71,60 +53,10 @@ func (c *AESCrypter) AESdecrypt2(message string) (string, error) {
 		return "", err
 	}
 
-	plaintext, err := aesgcm.Open(nil, nonce, cipherText, nil)
+	plaintext, err := aesgcm.Open(nil, c.nonce, cipherText, nil)
 	if err != nil {
 		return "", err
 	}
 
 	return fmt.Sprintf("%s", string(plaintext)), nil
-	//return base64.URLEncoding.EncodeToString(plaintext), nil
-}
-
-func (c *AESCrypter) AESEncrypt(text string) (string, error) {
-	Salt := fmt.Sprintf("%d", time.Now().Nanosecond())
-	block, err := aes.NewCipher(c.CipherKey)
-	if err != nil {
-		logrus.Error("Error initializing cypher")
-		return "", err
-	}
-	cipherText := make([]byte, aes.BlockSize+len(text))
-	iv := cipherText[:aes.BlockSize]
-	si := 0
-	for i, _ := range iv {
-		iv[i] = Salt[si]
-		si = (si + 1) % len(Salt)
-	}
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(cipherText[aes.BlockSize:], []byte(text))
-
-	return fmt.Sprintf("%x", cipherText), nil
-	//return base64.StdEncoding.EncodeToString(cipherText), nil
-}
-
-func (c *AESCrypter) AESencrypt2(plaintext string) (decodedmess string, err error) {
-	/*cipherText, err := base64.URLEncoding.DecodeString(securemess)
-		if err != nil {
-	    return "", err
-	  }*/
-
-	block, err := aes.NewCipher(c.CipherKey)
-	if err != nil {
-		return "", err
-	}
-
-	// Never use more than 2^32 random nonces with a given key because of the risk of a repeat.
-	nonce := make([]byte, 12)
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-
-	aesgcm, err := cipher.NewGCM(block)
-	if err != nil {
-		fmt.Println(err)
-		return "", err
-	}
-
-	cipherText := aesgcm.Seal(nil, nonce, []byte(plaintext), nil)
-	return fmt.Sprintf("%x", cipherText), nil
 }

@@ -23,6 +23,7 @@ var (
 	dataDir string
 
 	crypter aes.AESCrypter
+	key     string
 )
 
 func init() {
@@ -34,16 +35,28 @@ func init() {
 }
 
 func main() {
-	// TODO: env vars
-	crypter = aes.AESCrypter{
-		CipherKey: []byte("wpunIGR08kMX6pI8gWPBrFQApwcFXbpR"),
-		Nonce:     "afb8a7579bf971db9f8ceeed",
+	key := os.Getenv("VAULT_KEY")
+	if key == "" {
+		log.Fatal("VAULT_KEY environment variable required")
 	}
+	if len(key) != 32 {
+		log.Fatal("VAULT_KEY length must be 32")
+	}
+	nonce := os.Getenv("VAULT_NONCE")
+	if nonce == "" {
+		log.Fatal("VAULT_NONCE environment variable required")
+	}
+	if len(nonce) != 12 {
+		log.Fatal("VAULT_NONCE length must be 12")
+	}
+
+	// TODO: env vars
+	crypter = aes.NewAESCrypter(key, nonce)
 
 	http.API(name, buildDate, gitCommit, port, func(r *gin.Engine) {
 		r.GET("/help", func(c *gin.Context) {
 			c.JSON(200, []string{
-				"/list/*path      List secrets",
+				"/ls/*path      List secrets",
 				"/get/*name?mode  Get secrets (default mode: decrypt)",
 			})
 		})
@@ -64,7 +77,7 @@ func main() {
 			secret, err := GetFile(mode, name)
 			if err != nil {
 				if strings.Contains(err.Error(), "no such file or directory") {
-					c.JSON(400, "Secret `"+name+"` not found")
+					c.JSON(400, "Secret "+name+" not found")
 					return
 				}
 				log.WithError(err).WithField("name", name).Error("Fail to lookup secret")
@@ -119,7 +132,7 @@ func GetFile(mode string, name string) ([]byte, error) {
 	}
 
 	file := dataDir + name + suffix
-	log.Info("file to lookup ", file)
+	log.Debug("file to lookup ", file)
 
 	rawData, err := ioutil.ReadFile(file)
 	if err != nil {

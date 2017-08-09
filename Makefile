@@ -3,6 +3,8 @@ build:
 	doo b
 
 dev:
+	VAULT_KEY=Ha8QMP7fw4oLmYlZXFPfOMsjcMJmmvcL \
+	VAULT_NONCE=5A9WFbIQmnnp \
 	golive -data-dir ./test
 
 test-run:

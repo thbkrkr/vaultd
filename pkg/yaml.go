@@ -41,7 +41,7 @@ func (yv YamlVault) decryptVal(v interface{}) interface{} {
 	} else if typ == reflect.Map {
 		v2 = yv.decryptMap(v.(map[interface{}]interface{}))
 	} else {
-		v2, _ = yv.Crypter.AESDecrypt(fmt.Sprintf("%v", v))
+		v2, _ = yv.Crypter.Decrypt(fmt.Sprintf("%v", v))
 	}
 	return v2
 }
@@ -91,7 +91,7 @@ func (yv YamlVault) encryptVal(v interface{}) interface{} {
 		v2 = yv.encryptMap(v.(map[interface{}]interface{}))
 	} else {
 		var err error
-		v2, err = yv.Crypter.AESEncrypt(fmt.Sprintf("%v", v))
+		v2, err = yv.Crypter.Encrypt(fmt.Sprintf("%v", v))
 		if err != nil {
 			logrus.WithError(err).WithField("val", v).Error("Fail to encrypt val")
 		}

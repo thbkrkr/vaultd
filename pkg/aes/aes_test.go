@@ -9,24 +9,20 @@ import (
 var c AESCrypter
 
 func init() {
-	c = AESCrypter{
-		CipherKey: []byte("wpunIGR08kMX6pI8gWPBrFQApwcFXbpR"),
-		Nonce:     "afb8a7579bf971db9f8ceeed",
-		//Sault:     "7XDW52iEB580QAvp",
-	}
+	c = NewAESCrypter("AES256Key-32Characters1234567890", "nonce-12Char")
 }
 
 func TestAES(t *testing.T) {
 	originalMsg := "42"
 
-	encryptedMsg, err := c.AESEncrypt(originalMsg)
+	encryptedMsg, err := c.Encrypt(originalMsg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Fail to encrypt: ", err.Error())
 	}
 
-	decryptedMsg, err := c.AESDecrypt(encryptedMsg)
+	decryptedMsg, err := c.Decrypt(encryptedMsg)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Fail to decrypt: ", err.Error())
 	}
 
 	if decryptedMsg != originalMsg {

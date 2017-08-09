@@ -43,7 +43,7 @@ func (jv JsonVault) decryptVal(v interface{}) interface{} {
 		v2 = jv.decryptMap(v.(map[string]interface{}))
 	} else {
 		var err error
-		v2, err = jv.Crypter.AESDecrypt(fmt.Sprintf("%v", v))
+		v2, err = jv.Crypter.Decrypt(fmt.Sprintf("%v", v))
 		if err != nil {
 			logrus.WithError(err).WithField("val", v).Error("Fail to decrypt val")
 		}
@@ -96,7 +96,7 @@ func (jv JsonVault) encryptVal(v interface{}) interface{} {
 		v2 = jv.encryptMap(v.(map[string]interface{}))
 	} else {
 		var err error
-		v2, err = jv.Crypter.AESEncrypt(fmt.Sprintf("%v", v))
+		v2, err = jv.Crypter.Encrypt(fmt.Sprintf("%v", v))
 		if err != nil {
 			logrus.WithError(err).WithField("val", v).Error("Fail to encrypt val")
 		}

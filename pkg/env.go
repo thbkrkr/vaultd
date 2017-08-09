@@ -16,7 +16,7 @@ func (ev EnvVault) Decrypt(data []byte) ([]byte, error) {
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 		kv := bytes.Split(line, []byte{'='})
 		if len(kv) == 2 {
-			v, err := ev.Crypter.AESDecrypt(string(kv[1]))
+			v, err := ev.Crypter.Decrypt(string(kv[1]))
 			if err != nil {
 				return nil, err
 			}
@@ -34,7 +34,7 @@ func (ev EnvVault) Encrypt(data []byte) ([]byte, error) {
 	for _, line := range bytes.Split(data, []byte{'\n'}) {
 		kv := bytes.Split(line, []byte{'='})
 		if len(kv) >= 2 {
-			v, err := ev.Crypter.AESEncrypt(string(kv[1]))
+			v, err := ev.Crypter.Encrypt(string(kv[1]))
 			if err != nil {
 				return nil, err
 			}

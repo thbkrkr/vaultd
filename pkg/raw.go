@@ -9,11 +9,11 @@ type RawVault struct {
 }
 
 func (ev RawVault) Decrypt(data []byte) ([]byte, error) {
-	str, err := ev.Crypter.AESDecrypt(string(data))
+	str, err := ev.Crypter.Decrypt(string(data))
 	return []byte(str), err
 }
 
 func (ev RawVault) Encrypt(data []byte) ([]byte, error) {
-	str, err := ev.Crypter.AESEncrypt(string(data))
+	str, err := ev.Crypter.Encrypt(string(data))
 	return []byte(str), err
 }
