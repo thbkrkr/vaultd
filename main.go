@@ -27,7 +27,7 @@ var (
 )
 
 func init() {
-	flag.StringVar(&dataDir, "data-dir", ".", "Secrets storage directory")
+	flag.StringVar(&dataDir, "data-dir", "/data", "Secrets storage directory")
 	flag.Parse()
 
 	dataDir = strings.TrimPrefix(dataDir, "./")

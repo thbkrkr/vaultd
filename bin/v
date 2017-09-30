@@ -1,0 +1,109 @@
+#!/bin/bash -eu
+
+URL=${VAULTD_URL:-localhost}
+DATA_DIR=${DATA_DIR:-data}
+
+_vault:help() {
+  echo '
+Usage: v COMMAND
+
+Commands:
+  l|ls      *        List secrets
+  g|get     SECRET   Get secret
+  d|decrypt SECRET   Decrypt secret
+  e|encrypt FILE     Encrypt secret
+  da|decrypt_all     Decrypt all secrets
+  ea|encrypt_all     Encrypt all secrets
+
+Environment:
+  DATA_DIR          Directory to store secrets (default: /data)'
+}
+
+_vault:ls() {
+  local secretPath=${1:-""}
+  secretPath=$(sed "s|data||" <<< $secretPath)
+  curl -s "$URL/ls${secretPath}"
+}
+
+_vault:get() {
+  local secret=$(sed "s|data/||" <<< $secret)
+  curl -s "$URL/get/${secret}"
+}
+
+_vault:decrypt() {
+  local filename=$1
+  case $filename in
+    *.encrypt) ;;
+    *) echo 'required .encrypt file' && return 1 ;;
+  esac
+  local decrypted=$(sed "s|.encrypt||" <<< $filename)
+  local secret=$(sed "s|data/||" <<< $decrypted)
+  curl -s "$URL/get/${secret}" > ${decrypted}
+  echo --
+  echo -n '# decrypted: '
+  ls $decrypted
+  echo --
+  cat $decrypted
+}
+
+_vault:encrypt() {
+  local filename=$1
+  [ ! -f $filename ] && echo "$filename does not exist" && return 1
+  case $filename in
+    *encrypt) echo "$filename invalid: required not .encrypt file" && return 1 ;;
+  esac
+  local secret=$(sed "s|data/||" <<< $filename)
+
+  curl -s "$URL/get/${secret}?mode=encrypt" > ${filename}.encrypt
+  rm $filename
+  echo --
+  echo -n '# encrypted: '
+  ls ${filename}.encrypt
+  echo --
+  cat ${filename}.encrypt
+}
+
+_vault:decrypt_all() {
+  for f in $(find $DATA_DIR -name "*.encrypt" -type f); do
+    _vault:decrypt $f
+  done
+}
+
+_vault:encrypt_all() {
+  for f in $(find $DATA_DIR -type f -not -name "*.encrypt"); do
+    _vault:encrypt $f
+  done
+}
+
+v() {
+  local cmd=$1 secret=${2:-}
+  case "$cmd" in
+    vaultd)         exec vaultd              ;;
+    l|ls|list)      "_vault:ls"  $secret     ;;
+    g|get)          "_vault:get" $secret     ;;
+    d|decrypt)      "_vault:decrypt" $secret ;;
+    e|encrypt)      "_vault:encrypt" $secret ;;
+    ea|encrypt_all) "_vault:encrypt_all"     ;;
+    da|decrypt_all) "_vault:decrypt_all"     ;;
+    h|help)         "_vault:help"            ;;
+    *) echo -e "v: $cmd is not a v command.\nSee 'v help'" ;;
+  esac
+}
+
+v "$@"
+
+# __list_cmds() {
+#   echo 'decrypt
+# encrypt
+# ls
+# get'
+# }
+
+# __autocomplete_v() {
+#   while read m; do
+#     compadd "$m"
+#   done < <(__list_cmds)
+#   return 0
+# }
+
+#compdef __autocomplete_v v
